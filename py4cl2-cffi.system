@@ -1,0 +1,96 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Fri Dec 23 17:16:54 2022 +0530 <enometh@net.meer>
+;;;   Bugs-To: enometh@net.meer
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2022 Madhu.  All Rights Reserved.
+;;;
+(in-package "CL-USER")
+
+(defvar *py4cl2-cffi-source-dir*
+  (merge-pathnames "Github/py4cl2-cffi/" (translate-logical-pathname "EXTERN:")))
+(defvar *py4cl2-cffi-binary-dir* (binary-directory *py4cl2-cffi-source-dir*))
+
+
+(mk:defsystem "py4cl2-cffi/config"
+  :source-pathname *py4cl2-cffi-source-dir*
+  :binary-pathname *py4cl2-cffi-binary-dir*
+  :source-extension "lisp"
+  :depends-on ("uiop" "alexandria")
+  :components ((:module "src"
+		:components ((:file "config")))))
+
+#+nil
+(mk:oos :py4cl2-cffi/config :load :compile-during-load t)
+
+#+nil
+(setq SWANK-LOADER::*FASL-DIRECTORY* *SWANK-BINARY-DIR*)
+(assert (or (and (featurep :swank) (not (featurep :slynk)))
+	    (and (featurep :slynk) (not (featurep :swank)))
+	    (and (not (featurep :slynk)) (not (featurep :swank)))))
+
+
+(mk:defsystem :py4cl2-cffi
+  :source-pathname *py4cl2-cffi-source-dir*
+  :binary-pathname *py4cl2-cffi-binary-dir*
+  :source-extension "lisp"
+  :depends-on ("bordeaux-threads"
+	       "cffi"
+	       "cl-ppcre"
+	       "uiop"
+	       "alexandria"
+	       "trivial-garbage"
+	       "trivial-features"
+	       "optima"
+	       "iterate"
+	       "float-features"
+	       "parse-number"
+	       "py4cl2-cffi/config"
+#+nil	       (:feature :swank "swank")
+#+nil	       (:feature :slynk "slynk"))
+
+  :components
+  ((:module "src"
+    :components ((:file "py4cl.py" :language :static-file)
+		 (:file "package")
+		 (:file "lisp-utils")
+		 (:file "py4cl-utils.c" :language :static-file)
+		 (:file "py4cl-numpy-utils.c" :language :static-file)
+		 (:file "numpy-installed-p.txt" :language :static-file)
+		 (:file "shared-objects")
+		 (:file "dedicated-thread-utils")
+		 (:file "gil-gc")
+		 (:file "pycapi-functions")
+		 (:file "numpy")
+		 (:file "features")
+		 (:file "pythonizers")
+		 (:file "python-process")
+		 (:file "lispifiers")
+		 (:file "py-repr")
+		 (:file "callpython")
+		 (:file "callpython-optim")
+		 (:file "arg-list")
+		 (:file "import-export")
+		 (:file "lisp-classes")
+		 (:file "iterate")
+		 (:file "do-after-load")))))
+
+#+nil
+(mk:oos :py4cl2-cffi :load :compile-during-load t)
+
+(mk:defsystem "py4cl2-cffi/single-threaded"
+  :source-pathname *py4cl2-cffi-source-dir*
+  :binary-pathname *py4cl2-cffi-binary-dir*
+  :source-extension "lisp"
+  :depends-on ("py4cl2-cffi")
+  :components ((:module "single-threaded"
+		:components ((:file "package")
+			     (:file "main-thread")
+			     (:file "wrapper-core")
+			     (:file "single-threaded-wrappers")
+			     (:file "pystart")
+			     (:file "import-export")))))
+
+#+nil
+(mk:oos :py4cl2-cffi/single-threaded :load :compile-during-load t)
