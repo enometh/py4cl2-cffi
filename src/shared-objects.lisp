@@ -4,18 +4,30 @@
 
   (defvar *utils-source-file-path*
     (merge-pathnames
+     #+asdf
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+     #-asdf
+     (merge-pathnames "src/" cl-user::*py4cl2-cffi-source-dir*)
+     #+(and nil (not asdf) mk-defsystem)
+     (mk::component-root-dir (mk:find-system "py4cl2-cffi" :load-or-nil) :source)
      #p"py4cl-utils.c"))
 
   (defvar *utils-shared-object-path*
     (merge-pathnames
+     #+asdf
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+     #-asdf
+     (merge-pathnames "src/" cl-user::*py4cl2-cffi-source-dir*)
      #p"libpy4cl-utils.so"))
 
   (defvar *numpy-installed-p*)
 
   (defun compile-utils-shared-object ()
-    (uiop:with-current-directory ((asdf:component-pathname (asdf:find-system "py4cl2-cffi")))
+    (uiop:with-current-directory (#+asdf
+				  (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+				  #-asdf
+				  (merge-pathnames "src/" cl-user::*py4cl2-cffi-source-dir*)
+				  )
       (multiple-value-bind (numpy-path error-output error-status)
           (uiop:run-program
            "cd ~/; python3 -c 'import numpy; print(numpy.__path__[0])'"
@@ -31,8 +43,11 @@
                              (format nil "~A/core/include/"
                                      (string-trim (list #\newline) numpy-path))
                              (namestring
-                              (asdf:component-pathname
-                               (asdf:find-system "py4cl2-cffi")))))))
+			      #+asdf
+			      (asdf:component-pathname
+			       (asdf:find-system "py4cl2-cffi"))
+			      #-asdf
+			      (merge-pathnames "src/" cl-user::*py4cl2-cffi-source-dir*))))))
           (setq *numpy-installed-p* numpy-installed-p)
           (format t "~&~A~%" program-string)
           (uiop:run-program program-string
@@ -44,9 +59,13 @@
 
 (eval-when (:compile-toplevel :load-toplevel)
   (let* ((numpy-installed-p-file
+	  #+asdf
            (asdf:component-pathname
             (asdf:find-component
-             "py4cl2-cffi" "numpy-installed-p")))
+             "py4cl2-cffi" "numpy-installed-p"))
+	   #-asdf
+	   (merge-pathnames "src/numpy-installed-p.lisp"
+			    cl-user::*py4cl2-cffi-source-dir*))
          (numpy-installed-p-old
            (read-file-into-string numpy-installed-p-file))
          (numpy-installed-p (zerop (nth-value 2

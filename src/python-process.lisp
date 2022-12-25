@@ -274,8 +274,12 @@ can lead to memory leak.")))
 py4cl_utils = ctypes.cdll.LoadLibrary(\"~A\")
 " (namestring *utils-shared-object-path*)))
     (raw-pyexec (read-file-into-string
+		 #+asdf
                  (asdf:component-pathname
-                  (asdf:find-component (asdf:find-system "py4cl2-cffi") "py4cl.py"))))
+                  (asdf:find-component (asdf:find-system "py4cl2-cffi") "py4cl.py"))
+		 #-asdf
+		 (merge-pathnames "src/py4cl.py"
+				  cl-user::*py4cl2-cffi-source-dir*)))
     (raw-pyexec "import decimal; Decimal = decimal.Decimal")
     (setq +py-empty-tuple-pointer+ (pycall* "tuple"))
     (setq +py-empty-tuple+ (pycall "tuple"))
