@@ -1,6 +1,15 @@
 (in-package :py4cl2-cffi)
 
 
+#+nil
+(mapcar (lambda (x)
+	  (let ((sym (find-symbol (symbol-name x) :py4cl2-cffi)))
+	    (when sym
+	      (unintern sym :py4cl2-cffi))))
+	'(*utils-source-file-path*
+	  *utils-shared-object-path*
+	  *numpy-installed-p*))
+
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
