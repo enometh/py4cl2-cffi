@@ -1,6 +1,15 @@
 (in-package :py4cl2-cffi)
 
 
+#+nil
+(mapcar (lambda (x)
+	  (let ((sym (find-symbol (symbol-name x) :py4cl2-cffi)))
+	    (when sym
+	      (unintern sym :py4cl2-cffi))))
+	'(*utils-source-file-path*
+	  *utils-shared-object-path*
+	  *numpy-installed-p*))
+
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
@@ -63,7 +72,10 @@
 	   )
       (multiple-value-bind (numpy-path error-output error-status)
           (uiop:run-program
-           "cd ~/; python3 -c 'import numpy; print(numpy.__path__[0])'"
+           (format nil
+		   "cd ~~/; ~A -c 'import numpy; print(numpy.__path__[0])'"
+		   (or py4cl2-cffi/config::+default-python+
+		       "python3"))
            :output :string :ignore-error-status t)
         (declare (ignore error-output))
         (let* ((numpy-installed-p
@@ -98,8 +110,11 @@
              (read-file-into-string numpy-installed-p-file)))
       (let* ((numpy-installed-p (zerop (nth-value 2
                                                   (uiop:run-program
-                                                   "python3 -c 'import numpy'"
-                                                   :ignore-error-status t))))
+						   (format nil
+							   "~a -c 'import numpy'"
+							   (or py4cl2-cffi/config::+default-python+
+							       "python3"))
+						   :ignore-error-status t))))
              (numpy-installed-p-new
                (with-standard-io-syntax
                  (write-to-string numpy-installed-p))))
