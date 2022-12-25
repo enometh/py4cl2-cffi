@@ -383,7 +383,11 @@ Arguments:
                  ,(when recompile-on-change
                     `(unless (string= ,(pyeval pymodule-name ".__version__")
                                       (pyeval ,pymodule-name ".__version__"))
-                       (asdf:compile-system ,recompile-on-change :force t :verbose nil)))
+
+		       #+(and asdf (not mk-defsystem))
+		       (asdf:compile-system ,recompile-on-change :force t :verbose nil)
+		       #+mk-defsystem
+		       (mk:compile-system  ,recompile-on-change :force t :verbose nil)))
                  (eval-when (:compile-toplevel :load-toplevel :execute)
                    ,ensure-package-form)
                  ,defpackage-form))
