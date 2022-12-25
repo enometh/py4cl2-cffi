@@ -46,6 +46,7 @@
         (t
          arg)))
 
+#+nil
 (let ((python-version-string (second (return-value-as-list "python3 --version"))))
   (if (uiop:version< python-version-string "3.8.0")
       (destructuring-bind (libpython-path more-libs-path &rest more-libs)
@@ -66,6 +67,7 @@
         (defvar *python-additional-libraries* more-libs)
         (defvar *python-additional-libraries-search-path* (pathname more-libs-path)))))
 
+#+nil
 (defvar *python-include-path*
   (pathname (strip-i-and-l (nth 0 (return-value-as-list "python3-config --includes")))))
 
