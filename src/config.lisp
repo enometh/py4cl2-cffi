@@ -28,6 +28,15 @@
 ;;
 ;; Then, we use that path (if set) for inferring the other values
 
+#+nil
+(mapcar (lambda (x)
+	  (let ((sym (find-symbol (symbol-name x) :py4cl2-cffi/config)))
+	    (when sym
+	      (unintern sym :py4cl2-cffi/config))))
+	'(*python-ldflags*
+	  *python-includes*
+	  *python-compile-command*))
+
 (declaim (type list
                *python-ldflags*
                *python-includes*))
@@ -55,7 +64,20 @@ The second ~A corresponds to the numpy include files discovered
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
-  (defun return-value-as-list (cmd)
+  (defvar +default-python+ nil
+    "If NON-NIL should be a string like \"python3.9\" which
+is used instead of python3 or python3.9-config.")
+
+  (defun return-value-as-list (cmd &optional override-+default-python+)
+    "If OVERRIDE-DEFAULT-PYTHON is non-NIL, skip the codepath that kludges
+the commandline to use +DEFAULT-PYTHON+."
+    (when (and +default-python+ (not override-+default-python+))
+      (let* ((prefix "python3")
+	     (len (length prefix)))
+	(assert (string= prefix cmd :end2 len))
+	(setq cmd (with-output-to-string (stream)
+		    (write-string +default-python+ stream)
+		    (write-string cmd stream :start len)))))
     (remove ""
             (mapcar (lambda (value)
                       (string-trim '(#\newline) value))
@@ -66,33 +88,46 @@ The second ~A corresponds to the numpy include files discovered
                      :separator '(#\newline #\tab #\space)))
             :test #'string=))
   
-  (defvar *python-executable-path*
+  (defparameter *python-executable-path*
     (if (uiop:getenv "PY4CL2_CONFIG_PYTHON_EXECUTABLE_PATH")
 	(uiop:getenv "PY4CL2_CONFIG_PYTHON_EXECUTABLE_PATH")
-	(first (return-value-as-list "which python3")))
+	(first (return-value-as-list
+		(format nil "which ~A" (or +default-python+ "python3"))
+		'override-+default-python+)))
     "The path to python executable. This will be used to set sys.path.
 This is useful in cases such as venv when python3-config does not lead
 to expected paths.")
 
+  #+nil ;; redefine +default-python+
   (alexandria:define-constant +python-version-string+
       (second (return-value-as-list (format nil "~A --version"
 					    *python-executable-path*)))
     :test #'string=)
+  (defparameter +python-version-string+
+    (second (return-value-as-list "python3 --version")))
 
   (if (uiop:version< +python-version-string+ "3.8.0")
-      (defvar *python-ldflags*
+      (defparameter *python-ldflags*
         (return-value-as-list "python3-config --ldflags"))
-      (defvar *python-ldflags*
+      (defparameter *python-ldflags*
         (return-value-as-list "python3-config --embed --ldflags"))))
 
 
-(defvar *python-includes*
+(defparameter *python-includes*
   (return-value-as-list "python3-config --includes"))
 
-(defvar *python-site-packages-path*
+
+#||
+HARDCODE
+(defvar *python-ldflags* (return-value-as-list "python3.9-config --embed --ldflags" t))
+(defvar *python-includes* (return-value-as-list "python3.9-config --includes" t))
+||#
+
+(defparameter *python-site-packages-path*
   (return-value-as-list
    (format nil "~A -c 'import sys; print(\"\\n\".join(sys.path))'"
-	   *python-executable-path*)))
+	   *python-executable-path*)
+   'override-+default-python+))
 
 (defun print-configuration ()
   "Prints the ldflags and includes that will be used for the compilation
