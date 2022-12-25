@@ -6,24 +6,47 @@
 
   (defvar *utils-source-file-path*
     (merge-pathnames
+     #p"py4cl-utils.c"
+     #+(and asdf (not mk-defsystem))
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
-     #p"py4cl-utils.c"))
+     #+mk-defsystem
+     (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi ""))
+     #+(and nil mk-defsystem (not asdf))
+     (mk::component-root-dir (mk:find-system "py4cl2-cffi" :load-or-nil) :source)))
 
   (defvar *utils-shared-object-path*
     (merge-pathnames
+     (pathname (%shared-library-from-ldflag "-lpy4cl-utils"))
+     #+(and asdf (not mk-defsystem))
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
-     (pathname (%shared-library-from-ldflag "-lpy4cl-utils"))))
+     #+mk-defsystem
+     (make-pathname
+      :name nil :type nil :version nil :defaults
+      (merge-pathnames "src/" (#-clisp probe-file
+				       #+clisp ext:probe-directory
+				       (mk::system-relative-pathname :py4cl2-cffi ""))))))
 
   (defvar *numpy-utils-shared-object-path*
     (merge-pathnames
+     (pathname (%shared-library-from-ldflag "-lpy4cl-numpy-utils"))
+     #+(and asdf (not mk-defsystem))
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
-     (pathname (%shared-library-from-ldflag "-lpy4cl-numpy-utils"))))
+;;madhu 231123 - need an absolute path without tilde here
+     #+mk-defsystem
+     (make-pathname
+      :name nil :type nil :version nil :defaults
+      (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi "")))))
 
   (defvar *numpy-installed-p*)
 
   (defun compile-base-utils-shared-object ()
     (uiop:with-current-directory
-        ((asdf:component-pathname (asdf:find-system "py4cl2-cffi")))
+        (
+	 #+(and asdf (not mk-defsystem))
+	   (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+	   #+mk-defsystem
+	   (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi ""))
+	   )
       (let* ((program-string
                (format nil
                        *python-compile-command*
@@ -35,7 +58,11 @@
 
   (defun may-be-compile-numpy-utils-shared-object ()
     (uiop:with-current-directory
-        ((asdf:component-pathname (asdf:find-system "py4cl2-cffi")))
+	( #+(and asdf (not mk-defsystem))
+	  (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+	   #+mk-defsystem
+	   (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi ""))
+	   )
       (multiple-value-bind (numpy-path error-output error-status)
 	  (uiop:run-program
            (concatenate 'string "cd ~/;"
@@ -72,9 +99,13 @@
 
 (eval-when (:compile-toplevel :load-toplevel)
   (let* ((numpy-installed-p-file
+	  #+(and asdf (not mk-defsystem))
            (asdf:component-pathname
             (asdf:find-component
-             "py4cl2-cffi" "numpy-installed-p.txt"))))
+             "py4cl2-cffi" "numpy-installed-p.txt"))
+	   #+mk-defsystem
+	   (mk::system-relative-pathname
+	    :py4cl2-cffi "src/numpy-installed-p.txt")))
     (multiple-value-bind (numpy-installed-p-old error)
           (ignore-errors
            (with-standard-io-syntax

@@ -287,8 +287,11 @@ py4cl_utils = ctypes.pydll.LoadLibrary(\"~A\")
 
   (with-verbosity "Reading py4cl.py"
     (raw-pyexec (read-file-into-string
+		 #+(and asdf (not mk-defsystem))
                  (asdf:component-pathname
-                  (asdf:find-component (asdf:find-system "py4cl2-cffi") "py4cl.py")))))
+                  (asdf:find-component (asdf:find-system "py4cl2-cffi") "py4cl.py"))
+		 #+mk-defsystem
+		 (mk::system-relative-pathname :py4cl2-cffi "src/py4cl.py"))))
 
   (with-verbosity "Importing python module: decimal"
     (raw-pyexec "import decimal; Decimal = decimal.Decimal"))
