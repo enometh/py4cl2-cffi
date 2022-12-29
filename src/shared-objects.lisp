@@ -170,7 +170,8 @@
     (multiple-value-bind (libraries search-paths)
         (libraries-and-search-paths *python-ldflags*)
       (mapc (lambda (library)
-              (load-foreign-library library :search-path search-paths))
+	       (with-simple-restart (cont "Cont")
+		 (load-foreign-library library :search-path search-paths)))
             libraries))
     (load-foreign-library *utils-shared-object-path*)
     (when *numpy-installed-p*
