@@ -15,7 +15,8 @@
 
 (declaim (type pathname
                *python-shared-object-path*
-               *python-include-path*
+               *python-include-path*))
+(declaim (type list
                *python-additional-libraries-search-path*))
 
 (declaim (type string *python-compile-command*))
