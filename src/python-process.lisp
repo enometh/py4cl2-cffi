@@ -9,10 +9,11 @@
 (defun load-python-and-libraries ()
   (load-foreign-library *python-shared-object-path*)
   (dolist (lib (loop :for lib :in *python-additional-libraries*
-                     :nconcing
-                     (uiop:directory-files
-                      *python-additional-libraries-search-path* (format nil "lib~A.so*" lib))))
-    (load-foreign-library lib))
+		     do (with-simple-restart (cont "Cont")
+			  (load-foreign-library
+			   (format nil "lib~A.so" lib)
+			   :search-path
+			   *python-additional-libraries-search-path*)))))
   (load-foreign-library *utils-shared-object-path*)
   (setq *python-libraries-loaded-p* t))
 
