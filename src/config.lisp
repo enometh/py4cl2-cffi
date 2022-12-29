@@ -79,7 +79,7 @@ the commandline to use +DEFAULT-PYTHON+."
 		    (write-string +default-python+ stream)
 		    (write-string cmd stream :start len)))))
     (remove ""
-            (mapcar (lambda (value)
+            (mapcar (lambda (value) ;madhu 240520 this is redundant
                       (string-trim '(#\newline) value))
                     (uiop:split-string
                      (uiop:run-program cmd
