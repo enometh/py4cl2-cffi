@@ -76,3 +76,46 @@
           *python-shared-object-path*
           *python-include-path*
           *python-additional-libraries-search-path*))
+
+#+nil
+(defun file-name-as-directory (pathname)
+  (cond ((or (pathname-name pathname) (pathname-type pathname))
+	 (make-pathname :name nil :version nil :type nil
+		     :directory (append (pathname-directory pathname)
+					(list(file-namestring pathname)))))))
+
+#+nil
+(assert (equalp (file-name-as-directory #p"/usr/lib64") #p"/usr/lib64/"))
+
+#+nil
+(defun get-defvar-forms ()
+  (let (libpython-paths more-libs-with-path more-libs includes)
+    (dolist (elt (return-value-as-list "python3-config --ldflags --includes"))
+      (cond ((eql #\- (elt elt 0))
+	     (cond ((eql #\I (elt elt 1))
+		    (pushnew (subseq elt 2) includes :test #'equal))
+		   ((eql #\L (elt elt 1))
+		    (pushnew (subseq elt 2) libpython-paths :test #'equal))
+		   ((eql #\l (elt elt 1))
+		    (pushnew (subseq elt 2) more-libs :test #'equal))))
+	    ((eql #\/ (elt elt 0))
+	     (pushnew elt more-libs-with-path :test #'equal))
+	    (t (error "unexpected from python3-config: ~S" elt))))
+    `(progn
+       (defvar *python-include-path* ,(file-name-as-directory (car includes))) ;FIXME more includes
+       (defvar *python-additional-libraries* ',more-libs)
+       (defvar *python-additional-libraries-search-path*
+	 ',(mapcar #'file-name-as-directory (append libpython-paths ))))))
+
+
+
+#+nil
+(macrolet ((define-it ()
+	     (get-defvar-forms)))
+  (define-it)
+  nil)
+
+(DEFVAR *PYTHON-SHARED-OBJECT-PATH* #p"/usr/lib64/libpython3.9.so")
+(DEFVAR *PYTHON-INCLUDE-PATH* #p"/usr/include/python3.9")
+(DEFVAR *PYTHON-ADDITIONAL-LIBRARIES* '( #|"m" "util" "dl" "pthread" "crypt"|#))
+(DEFVAR *PYTHON-ADDITIONAL-LIBRARIES-SEARCH-PATH* '(#P"/usr/lib64/"))
