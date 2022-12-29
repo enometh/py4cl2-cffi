@@ -28,12 +28,11 @@
 
 (defun return-value-as-list (cmd)
   (remove ""
-          (uiop:split-string
-           (string-trim '(#\newline)
-                        (uiop:run-program cmd
-                                          :output :string
-                                          :error-output *error-output*)))
-          :test #'string=))
+	  (uiop:split-string
+	   (uiop:run-program cmd :output :string
+			     :error-output *error-output*)
+	   :separator '(#\Newline #\Space #\Tab))
+	  :test #'equal))
 
 (defun strip-i-and-l (arg)
   (declare (type string arg))
