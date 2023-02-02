@@ -48,9 +48,11 @@ with-remote-objects, evaluates the last result and returns not just a handle."
            (optimize speed))
   (labels ((pin-and-call (&rest rem-args)
              (cond ((null rem-args)
-                    (let ((pythonized-args (pythonize-args args)))
+                    (let (#+nil(pythonized-args (pythonize-args args)))
                       (multiple-value-bind (pos-args kwargs)
-                          (args-and-kwargs pythonized-args)
+                          (args-and-kwargs args)
+			#+nil
+		      (format t "%pycall*: args = ~S; pythonized = ~S; pos-args = ~S; kwargs = ~S~&"  args pythonized-args pos-args kwargs)
                         ;; PyObject_Call returns a new reference
                         (let* ((return-value
                                  (pyforeign-funcall "PyObject_Call"
@@ -76,9 +78,13 @@ with-remote-objects, evaluates the last result and returns not just a handle."
       (with-pygc
         ;; We can't just rely on %PYCALL* because we also need to deal with
         ;; PYTHONIZED-ARGS while lispifying the values
-        (let ((pythonized-args (pythonize-args args)))
+        (let (#+nil(pythonized-args (pythonize-args args)))
           (multiple-value-bind (pos-args kwargs)
-              (args-and-kwargs pythonized-args)
+	    #+nil
+	      (args-and-kwargs pythonized-args)
+              (args-and-kwargs args)
+	    #+nil
+	    (format t "%pycall: : args = ~S; pythonized = ~S; pos-args = ~S; kwargs = ~S~&"  args pythonized-args pos-args kwargs)
             ;; PyObject_Call returns a new reference
             (let* ((return-value (pyforeign-funcall "PyObject_Call"
                                                     :pointer python-callable-pointer
@@ -87,6 +93,7 @@ with-remote-objects, evaluates the last result and returns not just a handle."
                                                     :pointer)))
               ;; If the RETURN-VALUE is an array amongst the inputs,
               ;; then avoid lispifying the return-value
+	      #+nil
               (mapc (lambda (pyarg arg)
                       (when (and (arrayp arg)
                                  (pointer-eq pyarg return-value))
