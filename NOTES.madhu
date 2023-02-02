@@ -1,0 +1,29 @@
+-*- Org -*-
+
+* selenium webdriver with wyeb
+
+#+begin_src lisp
+;madhu 230202
+(defpackage "PY4CL2-CFFI-USER"
+  (:use "CL" "PY4CL2-CFFI"))
+(in-package "PY4CL2-CFFI-USER")
+(import-module "selenium.webdriver" :as "webdriver")
+(import-module "os")
+(defvar $env (pyeval "os.environ"))
+(pymethod-list $env)
+(pymethod $env "setdefault" "WYEB_CL" "none")
+(equal (pymethod $env "get" "WYEB_CL") "none")
+(setq $wkoptions1 (pyeval "webdriver.WebKitGTKOptions()"))
+(setf (pyslot-value $wkoptions1 "binary_location") "wyeb")
+(pymethod $wkoptions1 "set_capability" "browserName" "Wyeb")
+(pymethod $wkoptions1 "add_argument" "/")
+(pymethod $wkoptions1 "add_argument" "automation")
+(pymethod $wkoptions1 "add_argument" "bogus") ; handled by wyeb specially
+(pymethod $wkoptions1 "to_capabilities")
+(pymethod-list (pyeval "webdriver.WebKitGTK"))
+(defvar $wyeb (pycall "webdriver.WebKitGTK"
+		      :desired_capabilities (make-hash-table)
+		      :options $wkoptions1))
+(pymethod $wyeb "get" "file:////scratch/share/docs/python/index.html")
+(pymethod $wyeb "quit")
+#+end_src
