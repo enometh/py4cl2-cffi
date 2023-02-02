@@ -269,7 +269,9 @@ python callable, which is then retrieved using PYVALUE*"
 
 (defun pyhelp (string-or-python-callable)
   (pycall "help" string-or-python-callable)
+  ;; ;madhu 230202 flush gets called too soon
   (pycall (pyvalue "sys.stdout.flush"))
+  (pycall (pyvalue "sys.stderr.flush"))
   nil)
 
 (flet ((may-be-slice (index)
