@@ -166,9 +166,9 @@ execution of THUNK as a string."
 ;;; This is more of a global variable than a dynamic variable.
 
 (defvar *py-output-stream-pipe*
-  (format nil "/tmp/py4cl2-cffi-output-~D" (swank/backend:getpid)))
+  (format nil "/tmp/py4cl2-cffi-output-~D" (swank-compat-backend:getpid)))
 (defvar *py-error-output-stream-pipe*
-  (format nil "/tmp/py4cl2-cffi-error-output-~D" (swank/backend:getpid)))
+  (format nil "/tmp/py4cl2-cffi-error-output-~D" (swank-compat-backend:getpid)))
 (defvar *py-output-reader-thread* nil)
 (defvar *py-error-output-reader-thread* nil)
 

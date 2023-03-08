@@ -30,6 +30,11 @@
 	    (and (featurep :slynk) (not (featurep :swank)))
 	    (and (not (featurep :slynk)) (not (featurep :swank)))))
 
+(defpackage "SWANK-COMPAT-BACKEND"
+  (:use)
+  (:export "GETPID")
+  (:import-from #+slynk "SLYNK-BACKEND" #+swank "SWANK/BACKEND"
+   "GETPID"))
 
 (mk:defsystem :py4cl2-cffi
   :source-pathname *py4cl2-cffi-source-dir*
