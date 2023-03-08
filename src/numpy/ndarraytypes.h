@@ -1,6 +1,8 @@
 #ifndef NUMPY_CORE_INCLUDE_NUMPY_NDARRAYTYPES_H_
 #define NUMPY_CORE_INCLUDE_NUMPY_NDARRAYTYPES_H_
 
+#error SHOULD USE SYSTEM NUMPY HEADERS
+
 #include "npy_common.h"
 #include "npy_endian.h"
 #include "npy_cpu.h"
