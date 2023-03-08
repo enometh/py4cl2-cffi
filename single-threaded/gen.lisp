@@ -84,7 +84,7 @@
       ;; FIXME: Handle keyword args
       `(,(let ((lambda-list
                  (sanitize-lambda-list
-                  (swank/backend:arglist multi-threaded-sym))))
+                  (swank-compat-backend:arglist multi-threaded-sym))))
            `(,(if macrop 'defmacro 'defun)
              ,single-threaded-sym ,lambda-list
              ,(call-form-from-fn-and-ll
@@ -98,7 +98,7 @@
         ,(when (fboundp `(setf ,multi-threaded-sym))
            (let ((lambda-list
                    (sanitize-lambda-list
-                    (swank/backend:arglist `(setf ,multi-threaded-sym)))))
+                    (swank-compat-backend:arglist `(setf ,multi-threaded-sym)))))
              `(,(if macrop 'defmacro 'defun)
                (setf ,single-threaded-sym) ,lambda-list
                ,(call-form-from-fn-and-ll
