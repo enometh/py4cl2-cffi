@@ -132,6 +132,21 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
                           return-value)))
                      ((and (arrayp (car rem-args))
                            (not (eq t (array-element-type (car rem-args)))))
+		      #+lispworks	;; XXX ???
+		      (let* ((array (car rem-args))
+                             (element-type (array-element-type array))
+			     (uaet (upgraded-array-element-type element-type))
+                             (pinnable-p (if (member uaet '(character t))
+					     nil t))
+                             (vector (make-array (length array)
+						 :element-type element-type
+						 :initial-contents array
+						 :allocation (if pinnable-p
+								 :pinnable
+								 :static-new))))
+			(hcl:with-pinned-objects (vector)
+                          (apply #'pin-and-call (rest rem-args))))
+		      #-lispworks
                       (cffi:with-pointer-to-vector-data
                           (ptr (array-storage (car rem-args)))
                         #-ccl (declare (ignore ptr))
