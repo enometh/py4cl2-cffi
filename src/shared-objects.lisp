@@ -22,7 +22,7 @@
 
   (defvar *numpy-installed-p*)
 
-  (defun compile-utils-shared-object ()
+  (defun compile-utils-shared-object (&key force)
     (uiop:with-current-directory (#+asdf
 				  (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
 				  #-asdf
@@ -37,7 +37,8 @@
                  (zerop error-status))
                (program-string
                  (format nil
-                         *python-compile-command*
+                         ;; *python-compile-command*
+                         "gcc -I'~A' -I'~A' -c -Wall -Werror -fpic py4cl-utils.c"
                          (namestring *python-include-path*)
                          (if numpy-installed-p
                              (format nil "~A/core/include/"
@@ -49,10 +50,17 @@
 			      #-asdf
 			      (merge-pathnames "src/" cl-user::*py4cl2-cffi-source-dir*))))))
           (setq *numpy-installed-p* numpy-installed-p)
-          (format t "~&~A~%" program-string)
-          (uiop:run-program program-string
-                            :error-output *error-output*
-                            :output *standard-output*))))))
+        (flet ((compile-if-newer (source target command)
+                 (when (or force (not (probe-file target))
+                           (< (file-write-date target)
+                              (file-write-date source)))
+		   (format t "~&~A~%" command)
+                   (uiop:run-program command
+                                     :error-output *error-output*
+                                     :output *standard-output*))))
+          (compile-if-newer "py4cl-utils.c" "py4cl-utils.o" program-string)
+          (compile-if-newer "py4cl-utils.o" "libpy4cl-utils.so"
+                            "gcc -shared -o libpy4cl-utils.so py4cl-utils.o")))))))
 
 (eval-when (:compile-toplevel)
   (compile-utils-shared-object))
