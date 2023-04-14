@@ -10,9 +10,21 @@
 	  *utils-shared-object-path*
 	  *numpy-installed-p*))
 
+#+nil
+(progn
+(compile-base-utils-shared-object :force t)
+(may-be-compile-numpy-utils-shared-object :force t))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
+(defun compile-if-newer (source target command &key force)
+  (when (or force (not (probe-file target))
+	    (< (file-write-date target)
+	       (file-write-date source)))
+    (format t "~&~A~%" command)
+    (uiop:run-program command
+		      :error-output *error-output*
+		      :output *standard-output*)))
   (defvar *utils-source-file-path*
     (merge-pathnames
      #p"py4cl-utils.c"
@@ -48,7 +60,7 @@
 
   (defvar *numpy-installed-p*)
 
-  (defun compile-base-utils-shared-object ()
+  (defun compile-base-utils-shared-object (&key force)
     (uiop:with-current-directory
         (
 	 #+(and asdf (not mk-defsystem))
@@ -58,14 +70,22 @@
 	   )
       (let* ((program-string
                (format nil
-                       *python-compile-command*
+                       ;; *python-compile-command*
+		       "gcc ~A -c -Wall -Werror -fpic py4cl-utils.c"
                        (format nil "~{~a~^ ~}" *python-includes*))))
+	#||
         (format t "~&~A~%" program-string)
         (uiop:run-program program-string
                           :error-output *error-output*
-                          :output *standard-output*))))
+                          :output *standard-output*)
+	||#
+	(compile-if-newer "py4cl-utils.c" "py4cl-utils.o" program-string
+			  :force force)
+	(compile-if-newer "py4cl-utils.o" "libpy4cl-utils.so"
+                            "gcc -shared -o libpy4cl-utils.so py4cl-utils.o"
+			    :force force))))
 
-  (defun may-be-compile-numpy-utils-shared-object ()
+  (defun may-be-compile-numpy-utils-shared-object (&key force)
     (uiop:with-current-directory
 	( #+(and asdf (not mk-defsystem))
 	  (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
@@ -75,20 +95,21 @@
       (multiple-value-bind (numpy-path error-output error-status)
 	  (uiop:run-program
            (concatenate 'string "cd ~/;"
-			(format nil "~A -c 'import numpy; print(numpy.__path__[0])'"
-				py4cl2-cffi/config:*python-executable-path*))
+                        (format nil "~A -c 'import numpy; print(numpy.__path__[0])'"
+                                py4cl2-cffi/config:*python-executable-path*))
            :output :string :ignore-error-status t)
         (declare (ignore error-output))
         (let* ((numpy-installed-p
                 (zerop error-status))
 	       (numpy-version
+		(and numpy-installed-p
                  (first
                   (uiop:parse-version
                    (uiop:run-program
                     (format nil "~A -c 'import numpy; print(numpy.__version__, end=\"\")'"
 			                      *python-executable-path*)
                     :output :string
-                    :ignore-error-status t))))               
+                    :ignore-error-status t)))))
                (program-string
                  (format nil
                          *python-numpy-compile-command*
@@ -98,12 +119,25 @@
                                          "~A/core/include/")
                                  (string-trim (list #\newline) numpy-path)))))
           (when numpy-installed-p
-            (format t "~&~A~%" program-string)
-            (uiop:run-program program-string
-                              :error-output *error-output*
-                              :output *standard-output*)))))))
+	    (compile-if-newer
+	     "py4cl-numpy-utils.c"
+	     "py4cl-numpy-utils.o"
+	     (format nil "gcc ~A -I'~A' -c -Wall -Werror -fpic py4cl-numpy-utils.c -Wno-error -Wno-return-type -Wno-int-conversion -Wno-implicit-function-declaration"
+		     (format nil "~{~a~^ ~}" *python-includes*)
+		     (format nil (ecase numpy-version
+                                   (1 "~A/core/include/")
+                                   (2 "~A/_core/include/"))
+			     (string-trim (list #\newline)
+					  ;; numpy-path = "/usr/lib/python3.11/site-packages/numpy"
+					  numpy-path)))
+	     :force force)
+	    (compile-if-newer
+	     "py4cl-numpy-utils.o"
+	     "libpy4cl-numpy-utils.so"
+	     "gcc -shared -o libpy4cl-numpy-utils.so py4cl-numpy-utils.o"
+	     :force force)))))))
 
-(eval-when (:compile-toplevel)
+(eval-when (:compile-toplevel :load-toplevel)
   (compile-base-utils-shared-object))
 
 (eval-when (:compile-toplevel :load-toplevel)
