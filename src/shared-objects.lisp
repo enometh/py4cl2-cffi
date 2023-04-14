@@ -10,6 +10,8 @@
 	  *utils-shared-object-path*
 	  *numpy-installed-p*))
 
+#+nil
+(compile-utils-shared-object :force t)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
@@ -46,7 +48,7 @@
 
   (defvar *numpy-installed-p*)
 
-  (defun compile-base-utils-shared-object ()
+  (defun compile-base-utils-shared-object (&key force)
     (uiop:with-current-directory
         (
 	 #+(and asdf (not mk-defsystem))
@@ -56,12 +58,26 @@
 	   )
       (let* ((program-string
                (format nil
-                       *python-compile-command*
+                       ;; *python-compile-command*
+		       "gcc ~A -c -Wall -Werror -fpic py4cl-utils.c"
                        (format nil "~{~a~^ ~}" *python-includes*))))
+	#||
         (format t "~&~A~%" program-string)
         (uiop:run-program program-string
                           :error-output *error-output*
-                          :output *standard-output*))))
+                          :output *standard-output*)
+	||#
+        (flet ((compile-if-newer (source target command)
+                 (when (or force (not (probe-file target))
+                           (< (file-write-date target)
+                              (file-write-date source)))
+                  (format t "~&~A~%" command)
+                   (uiop:run-program command
+                                     :error-output *error-output*
+                                     :output *standard-output*))))
+          (compile-if-newer "py4cl-utils.c" "py4cl-utils.o" program-string)
+          (compile-if-newer "py4cl-utils.o" "libpy4cl-utils.so"
+                            "gcc -shared -o libpy4cl-utils.so py4cl-utils.o")))))
 
   (defun may-be-compile-numpy-utils-shared-object ()
     (uiop:with-current-directory
