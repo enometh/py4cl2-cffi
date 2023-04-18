@@ -109,6 +109,22 @@ WITH-REMOTE-OBJECTS, evaluates the last result and returns not just a handle."
 (declaim (ftype (function (foreign-pointer &rest t)
                           (values foreign-pointer &optional))
                 %pycall*))
+
+(defmacro d (&rest syms-and-strings)
+  (let* ((args nil)
+	 (fmt-string
+	  (with-output-to-string (stream)
+	    (loop for (c . rest) on syms-and-strings do
+		  (typecase c
+		    (string (princ c stream))
+		    ((or (and symbol (not keyword)) (not atom))
+		     (push c args)
+		     (princ c stream)
+		     (princ "=~S" stream))
+		    (otherwise (prin1 c stream)))
+		  (princ (if (endp rest) #\Newline #\Space) stream)))))
+    `(format t ,fmt-string ,@(nreverse args))))
+
 (defun %pycall* (python-callable-pointer &rest args)
   "Fastest (non compile-time) variant of PYCALL.
 It takes in a foreign-pointer to a python callable and returns a foreign pointer to the return value which is a pyobject."
@@ -132,6 +148,7 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
                           return-value)))
                      ((and (arrayp (car rem-args))
                            (not (eq t (array-element-type (car rem-args)))))
+;;		      (d "%PYCALL*" (array-element-type (car rem-args)))
 		      #+lispworks	;; XXX ???
 		      (let* ((array (car rem-args))
                              (element-type (array-element-type array))
@@ -144,6 +161,7 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
 						 :allocation (if pinnable-p
 								 :pinnable
 								 :static-new))))
+;;			(d "%PYCALL*" pinnable-p)
 			(hcl:with-pinned-objects (vector)
                           (apply #'pin-and-call (rest rem-args))))
 		      #-lispworks
