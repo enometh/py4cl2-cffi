@@ -43,6 +43,22 @@ with-remote-objects, evaluates the last result and returns not just a handle."
 ;; %PYCALL and %PYCALL* take a pointer to callable as the argument
 ;; but the rest of the arguments can be lisp objects and need not be pointers.
 
+
+(defmacro d (&rest syms-and-strings)
+  (let* ((args nil)
+	 (fmt-string
+	  (with-output-to-string (stream)
+	    (loop for (c . rest) on syms-and-strings do
+		  (typecase c
+		    (string (princ c stream))
+		    ((or (and symbol (not keyword)) (not atom))
+		     (push c args)
+		     (princ c stream)
+		     (princ "=~S" stream))
+		    (otherwise (prin1 c stream)))
+		  (princ (if (endp rest) #\Newline #\Space) stream)))))
+    `(format t ,fmt-string ,@(nreverse args))))
+
 (defun %pycall* (python-callable-pointer &rest args)
   (declare (type foreign-pointer python-callable-pointer)
            (optimize speed))
@@ -61,6 +77,7 @@ with-remote-objects, evaluates the last result and returns not just a handle."
                           return-value))))
                    ((and (arrayp (car rem-args))
                          (not (eq t (array-element-type (car rem-args)))))
+		    (d "%PYCALL*" (array-element-type (car rem-args)))
                     #+lispworks	;; XXX ???
                     (let* ((array (car rem-args))
                            (element-type (array-element-type array))
@@ -73,6 +90,7 @@ with-remote-objects, evaluates the last result and returns not just a handle."
                                                :allocation (if pinnable-p
                                                                :pinnable
                                                                :static-new))))
+		      (d "%PYCALL*" pinnable-p)
                       (hcl:with-pinned-objects (vector)
                         (apply #'pin-and-call (rest rem-args))))
                     #-lispworks
