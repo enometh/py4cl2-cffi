@@ -172,6 +172,9 @@ Arguments:
          (fun-symbol (intern lisp-fun-name lisp-package)))
     (destructuring-bind (parameter-list pass-list)
         (funcall *arg-list-fun* fullname (find-package lisp-package))
+      (unless (stringp fun-doc)
+	(format t "WARNING: ~S: expected string doc instead of ~S~&" fun-symbol fun-doc)
+	(setq fun-doc "__doc__fixme__"))
       (let ((common-code
               `(progn
                  (defun ,fun-symbol (,@parameter-list)
