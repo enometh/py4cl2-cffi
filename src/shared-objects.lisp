@@ -78,7 +78,7 @@
            (read-file-into-string numpy-installed-p-file))
          (numpy-installed-p (zerop (nth-value 2
                                               (uiop:run-program
-                                               "python3 -c 'import numpy'"
+                                               "python3.9 -c 'import numpy'"
                                                :ignore-error-status t))))
          (numpy-installed-p-new
            (format nil "CL:~A" numpy-installed-p)))
