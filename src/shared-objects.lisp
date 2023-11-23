@@ -39,6 +39,7 @@
     (merge-pathnames
      #+(and asdf (not mk-defsystem))
      (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
+;;madhu 231123 - need an absolute path without tilde here
      #+mk-defsystem
      (make-pathname
       :name nil :type nil :version nil :defaults
