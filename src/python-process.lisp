@@ -116,6 +116,9 @@ to the stream specified in WITH-PYTHON-*-OUTPUT "
                     (when char
                       (write-char char default-output-stream)))))))
 
+(defvar *flush-both* t
+  "If Non-NIL CALL-THUNK-PYTHON-ERROR-OR-OUTPUT flushes both stdout and stderr.")
+
 ;; Alternate idea: Instead of having the thread write to the string-output-stream
 ;; open the named pipe and read from it directly.
 ;; Opening the pipe multiple times does not work, at least for small read/writes,
@@ -124,6 +127,8 @@ to the stream specified in WITH-PYTHON-*-OUTPUT "
 (defun call-thunk-python-error-or-output (thunk output-sync-struct stderr-or-stdout)
   "Capture and return the output produced by python during the
 execution of THUNK as a string."
+  (assert (or (equal stderr-or-stdout "stderr")
+	      (equal stderr-or-stdout "stdout")))
   (with-slots (py-stream with-python-stream
                in-with-python-count with-python-count-lock
                with-python-start-semaphore with-python-end-semaphore)
@@ -139,7 +144,10 @@ execution of THUNK as a string."
              (pycall (format nil "sys.~A.write" stderr-or-stdout) ".")
              (unwind-protect
                   (funcall thunk)
-               (pycall (format nil "sys.~A.flush" stderr-or-stdout))
+	       (if (not *flush-both*)
+		   (pycall (format nil "sys.~A.flush" stderr-or-stdout))
+		   (progn (py4cl2-cffi:pycall (py4cl2-cffi:pyvalue "sys.stderr.flush"))
+			  (py4cl2-cffi:pycall (py4cl2-cffi:pyvalue "sys.stdout.flush"))))
                (bt:signal-semaphore with-python-start-semaphore)
                (without-python-gil
                  (bt:wait-on-semaphore with-python-end-semaphore))
