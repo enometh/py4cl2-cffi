@@ -12,6 +12,7 @@
 
 (defun import-function (name from &key (as nil))
   (declare (type string name))
+ (progn;with-python-gil
   (python-start-if-not-alive)
   (pyimport-importmodule from)
   (python-may-be-error)
@@ -22,11 +23,12 @@
         (t
          (raw-py #\x (format nil "from ~A import ~A" from name))
          (python-may-be-error)))
-  t)
+  t))
 
 (defun import-module (name &key (as nil))
   (declare (type string name))
   (python-start-if-not-alive)
+ (progn;with-python-gil
   (let ((module-ptr (pyimport-importmodule name)))
     (python-may-be-error)
     (cond (as
@@ -38,7 +40,7 @@
            (raw-py #\x (format nil "import ~A" name))
            (setf (py-module-pointer name) module-ptr)
            (python-may-be-error))))
-  t)
+  t))
 
 (defun pymethod-list (pyobject &key (as-vector nil))
   (import-module "inspect")
