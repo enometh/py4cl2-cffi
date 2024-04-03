@@ -451,6 +451,30 @@ from inside PYTHON-MAY-BE-ERROR does not lead to an infinite recursion.")
           (unless (null-pointer-p may-be-error-type)
             (python-error-fetch)))))))
 
+;; this was the earlier implementation of raw-py see commit 88c9812c25c2
+#+nil
+(defun raw-py (cmd-char &rest code-strings)
+  (python-start-if-not-alive)
+  (unless (zerop (pyforeign-funcall "PyRun_SimpleString"
+                                    :string (apply #'concatenate
+                                                   'string
+                                                   (ecase cmd-char
+                                                     (#\e "_ = ")
+                                                     (#\x ""))
+                                                   code-strings)
+                                    :int))
+    (error 'pyerror
+           :format-control "An unknown python error occurred.
+Unfortunately, no more information about the error can be provided
+while using RAW-PYEVAL or RAW-PYEXEC on ~A"
+           :format-arguments (lisp-implementation-version)))
+  (ecase cmd-char
+    (#\e (let ((ptr (pyvalue* "_")))
+           (pyforeign-funcall "Py_IncRef" :pointer ptr)
+           (pytrack ptr)))
+    (#\x (values))))
+
+
 (defun raw-py (cmd-char &rest code-strings)
   "CMD-CHAR should be #\e for eval and #\x for exec.
 
