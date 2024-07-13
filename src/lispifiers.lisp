@@ -167,7 +167,9 @@
 
 (defun lispify (pyobject)
   (declare (type foreign-pointer pyobject)
+	   #+no-optim
            (optimize speed)
+	   #+no-optim
            (inline gethash pyobject-typename/simple djb2-foreign-string-hash))
   (assert (eq :lisp *pyobject-translation-mode*))
   ;; The performance impact of this check is less than 2%

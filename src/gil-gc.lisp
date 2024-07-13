@@ -1,5 +1,6 @@
 (in-package :py4cl2-cffi)
 
+#-no-optim
 (declaim (inline pygil-held-p pygil-release pygil-ensure
                  pyeval-save-thread pyeval-restore-thread))
 
@@ -193,6 +194,7 @@ This avoids inadvertent calls to DecRef during recursions.")
                     :pointer)))
 
 (defun pygc ()
+  #-no-optim
   (declare (optimize speed))
   (when (and *top-level-p* *pygc-enabled*)
     (let ((ht *python-new-references*)
@@ -239,7 +241,7 @@ The value in *PYTHON-NEW-REFERENCES* indicates the number
 of new references owned by lisp and which are not handled by finalizers
 of PYTHON-OBJECT structure instance in lisp."
   (declare (type foreign-pointer pyobject-pointer)
-           (optimize speed))
+           #-no-optim(optimize speed))
   ;; (let ((*top-level-p* nil)
   ;;       (*already-retrieving-exceptions* t))
   ;;   (with-python-gil/no-errors
@@ -271,7 +273,7 @@ The value in *PYTHON-NEW-REFERENCES* indicates the number
 of new references owned by lisp and which are not handled by finalizers
 of PYTHON-OBJECT structure instance in lisp."
   (declare (type foreign-pointer pyobject-pointer)
-           (optimize speed))
+           #-no-optim(optimize speed))
   ;; (with-python-gil/no-errors
   ;;   (let ((pystr (foreign-funcall "PyObject_Str"
   ;;                                 :pointer pyobject-pointer
@@ -299,7 +301,7 @@ of PYTHON-OBJECT structure instance in lisp."
   "Call this function when the foreign function of the Python C-API steals
 a New Reference"
   (declare (type foreign-pointer pyobject-pointer)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (if (boundp '*python-new-references*)
       (values (let ((ht   *python-new-references*)
                     (addr (pointer-address pyobject-pointer)))
