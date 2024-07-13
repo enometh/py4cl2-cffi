@@ -4,6 +4,7 @@
 (declaim (type (member :foreign-pointer :wrapper :lisp)
                *pyobject-translation-mode*))
 
+#-no-optim
 (declaim (inline pyobject-wrapper-pointer))
 
 (defstruct pyobject-wrapper
@@ -58,6 +59,7 @@ a New Reference"
 (defvar *print-pyobject-wrapper-identity* t
   "If non-NIL, print's the lisp type and identity of the pyobject-wrapper.")
 
+#-no-optim
 (declaim (inline pyobject-wrapper-eq*))
 (defun pyobject-wrapper-eq* (o1 o2)
   "Like PYOBJECT-WRAPPER-EQ but assumes that O1 and O2 are PYOBJECT-WRAPPER each."
@@ -274,8 +276,10 @@ takes place."))
 (defstruct (%python-keyword (:conc-name nil)
                             (:constructor make-python-keyword (py-name)))
   (py-name nil :type string  :read-only t))
+#-no-optim
 (declaim (inline make-python-keyword))
 (deftype python-keyword () '(or %python-keyword keyword))
+#-no-optim
 (declaim (inline python-keyword-p))
 (defun python-keyword-p (object) (typep object 'python-keyword))
 

@@ -6,6 +6,7 @@
 (defvar *python-state* :uninitialized)
 (declaim (type (member :uninitialized :initialized :initializing) *python-state*))
 
+#-no-optim
 (declaim (inline python-alive-p python-start-if-not-alive))
 (defun python-alive-p () (eq :initialized *python-state*))
 
@@ -37,7 +38,7 @@ Value: The pointer to the module dictionary in embedded python")
 (declaim (type hash-table *py-module-dict-pointer-table*))
 (defun py-module-dict (name)
   (declare (type string name)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (or (nth-value 0 (gethash name *py-module-dict-pointer-table*))
       (progn
         (python-start-if-not-alive)
@@ -48,7 +49,7 @@ Value: The pointer to the module dictionary in embedded python")
 
 (defun (setf py-module-dict) (module-dict-pointer name)
   (declare (type string name)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (setf (gethash name *py-module-dict-pointer-table*)
         module-dict-pointer))
 
@@ -570,7 +571,7 @@ this is a NO-OP."
 The PYTHON-VALUE-OR-VARIABLE may not contain '.' (full-stops)
 Use PYVALUE* if you want to refer to names containing full-stops."
   (declare (type (or foreign-pointer string) python-value-or-variable)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (python-start-if-not-alive)
   (if (typep python-value-or-variable 'foreign-pointer)
       python-value-or-variable
@@ -607,7 +608,7 @@ Use PYVALUE* if you want to refer to names containing full-stops."
 (defun %pyslot-value (object-pointer slot-name)
   (declare (type (or symbol string) slot-name)
            (type foreign-pointer object-pointer)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (python-start-if-not-alive)
   (ensure-non-null-pointer object-pointer
                            :format-control
@@ -629,7 +630,7 @@ Use PYVALUE* if you want to refer to names containing full-stops."
 (defun (setf %pyslot-value) (new-value object-pointer slot-name)
   (declare (type (or string symbol) slot-name)
            (type foreign-pointer object-pointer new-value)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (python-start-if-not-alive)
   (let* ((slot-name (etypecase slot-name
                       (string slot-name)
@@ -647,7 +648,7 @@ Use PYVALUE* if you want to refer to names containing full-stops."
   "Get the non-lispified value associated with PYTHON-VALUE-OR-VARIABLE"
   (declare (type (or foreign-pointer pyobject-wrapper string)
                  python-value-or-variable)
-           (optimize speed))
+           #-no-optim(optimize speed))
   (typecase python-value-or-variable
     (foreign-pointer python-value-or-variable)
     (pyobject-wrapper python-value-or-variable)

@@ -3,9 +3,10 @@
 (defmacro define-pycapi-function ((lisp-name cname) return-type &body args)
   (let ((lambda-list (mapcar #'first args)))
     `(progn
+       #+no-optim
        (declaim (inline ,lisp-name))
        (defun ,lisp-name ,lambda-list
-         (declare (optimize speed)
+         (declare #-no-optim(optimize speed)
                   #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
          ,(let* ((return-value (gensym "RETURN-VALUE"))
                  (return-value-gc-form
@@ -79,14 +80,19 @@
 (define-pycapi-function (pyobject-typename "PyObject_TypeName") :pointer
   (python-object-pointer :pointer))
 
+#-no-optim
 (declaim (inline pyobject-typename/simple))
 (defun pyobject-typename/simple (python-object-pointer)
+  #-no-optim
   (declare (optimize speed))
+  (assert (not (null-pointer-p python-object-pointer)))
   (foreign-funcall "PyObject_TypeName" :pointer python-object-pointer :pointer))
 (declaim (notinline pyobject-typename/simple))
 
+#-no-optim
 (declaim (inline djb2-foreign-string-hash))
 (defun djb2-foreign-string-hash (foreign-string)
+  #-no-optim
   (declare (optimize speed))
   (foreign-funcall "djb2_strhash" :pointer foreign-string :unsigned-long))
 (declaim (notinline djb2-foreign-string-hash))
@@ -170,6 +176,7 @@
 
 (define-pycapi-function (pyerr-occurred "PyErr_Occurred") :pointer)
 
+#-no-optim
 (declaim (inline pyerr-occurred/simple))
 (defun pyerr-occurred/simple ()
   (foreign-funcall "PyErr_Occurred" :pointer))

@@ -24,6 +24,7 @@ WITH-REMOTE-OBJECTS, evaluates the last result and returns not just a handle."
         (make-array +python-arguments-limit+ :element-type t)))
 
   (defun pythonize-args (lisp-args)
+    #-no-optim
     (declare (optimize speed)
              (dynamic-extent lisp-args)
              (inline pytuple-new pytuple-setitem pydict-setitem))
@@ -80,6 +81,7 @@ WITH-REMOTE-OBJECTS, evaluates the last result and returns not just a handle."
   (defun may-be-lispify-array (len pyobject-ptr)
     (declare (type (unsigned-byte 32) len)
              (type foreign-pointer pyobject-ptr)
+	     #-no-optim
              (optimize speed))
     (let ((addr (pointer-address pyobject-ptr)))
       (loop :for i :below len
@@ -87,14 +89,16 @@ WITH-REMOTE-OBJECTS, evaluates the last result and returns not just a handle."
                   (return (aref lisp-arrays i))))))
 
   (defun clear-pythonize-array-cache (len)
-    (declare (optimize speed)
+    (declare #-no-optim(optimize speed)
              (type (unsigned-byte 32) len))
     (loop :for i :below len
           :do (setf (aref python-array-pointers i) 0)
               (setf (aref lisp-arrays i) nil))))
 
+#-no-optim
 (declaim (inline %pycall-return-value))
 (defun %pycall-return-value (return-value)
+  #-no-optim
   (declare (optimize speed))
   (if (typep return-value 'foreign-pointer)
       (lispify return-value)
@@ -129,6 +133,7 @@ WITH-REMOTE-OBJECTS, evaluates the last result and returns not just a handle."
   "Fastest (non compile-time) variant of PYCALL.
 It takes in a foreign-pointer to a python callable and returns a foreign pointer to the return value which is a pyobject."
   (declare (type foreign-pointer python-callable-pointer)
+	   #-no-optim
            (optimize speed))
   ;; It is not appropriate to use PYGC here.
   ;; We expect the task of GC-ing to be performed by higher level functions.
@@ -175,7 +180,9 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
 
 (defun %pycall (python-callable-pointer &rest args)
   (declare (type foreign-pointer python-callable-pointer)
+	   #-no-optim
            (optimize speed)
+	   #-no-optim
            (inline pyobject-callobject pyobject-call))
   (with-dedicated-python-thread-if-required
     (ecase *pyobject-translation-mode*
@@ -221,8 +228,10 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
     (apply #'pyexec (nconc args (list "=" value)))
     value))
 
+#-no-optim
 (declaim (inline python-name-p))
 (defun python-name-p (name)
+  #-no-optim
   (declare (optimize speed))
   (and (stringp name)
        (every (lambda (char)
@@ -235,6 +244,7 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
 (defun pycall* (python-callable &rest args)
   "If PYTHON-CALLABLE is a string or symbol, it is treated as the name of a
 python callable, which is then retrieved using PYVALUE*"
+  #-no-optim
   (declare (optimize speed))
   (python-start-if-not-alive)
   (let ((pyfun (typecase python-callable
@@ -252,9 +262,10 @@ python callable, which is then retrieved using PYVALUE*"
         (error "Python function ~A is not defined" python-callable)
         (apply #'%pycall* pyfun args))))
 
+#-no-optim
 (declaim (inline pyobject-pointer-translate))
 (defun pyobject-pointer-translate (pyobject-pointer)
-  (declare (optimize speed)
+  (declare #-no-optim(optimize speed)
            (type foreign-pointer pyobject-pointer)
            #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
   (ecase *pyobject-translation-mode*
@@ -268,6 +279,7 @@ python callable, which is then retrieved using PYVALUE*"
 (defun pycall (python-callable &rest args)
   "If PYTHON-CALLABLE is a string or symbol, it is treated as the name of a
 python callable, which is then retrieved using PYVALUE*"
+  #-no-optim
   (declare (optimize speed))
   (with-dedicated-python-thread-if-required
     (python-start-if-not-alive)
