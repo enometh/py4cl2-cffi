@@ -92,7 +92,7 @@
   :components ((:module "single-threaded"
 		:components ((:file "package")
 			     (:file "main-thread")
-			     (:file "wrapper-code")
+			     (:file "wrapper-core")
 			     (:file "single-threaded-wrappers")
 			     (:file "pystart")
 			     (:file "import-export")))))
