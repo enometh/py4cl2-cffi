@@ -1,6 +1,13 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/ndarraytypes.h>
+#if NPY_FEATURE_VERSION >= NPY_2_0_API_VERSION
+#warning hai numpy1?
 #include <numpy/arrayobject.h>
+#else
+#warning hai numpy2?
+#include <numpy/arrayobject.h>
+#include <numpy/npy_2_compat.h>
+#endif
 
 void** import_numpy(){
   import_array();
