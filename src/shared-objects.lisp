@@ -13,7 +13,7 @@
 #+nil
 (progn
 (compile-base-utils-shared-object :force t)
-(may-be-compile-numpy-utils-shared-object :force nil))
+(may-be-compile-numpy-utils-shared-object :force t))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
@@ -106,7 +106,9 @@
                  (first
                   (uiop:parse-version
                    (uiop:run-program
-                    "python3 -c 'import numpy; print(numpy.__version__, end=\"\")'"
+		    (format nil "~a -c 'import numpy; print(numpy.__version__, end=\"\")'"
+			    (or py4cl2-cffi/config::+default-python+
+				"python3"))
                     :output :string))))))
           (when numpy-installed-p
 	    (compile-if-newer
