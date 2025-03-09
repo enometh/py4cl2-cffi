@@ -87,9 +87,9 @@ the commandline to use +DEFAULT-PYTHON+."
     (second (return-value-as-list "python3 --version")))
 
   (if (uiop:version< +python-version-string+ "3.8.0")
-      (defvar *python-ldflags*
+      (defparameter *python-ldflags*
         (return-value-as-list "python3-config --ldflags"))
-      (defvar *python-ldflags*
+      (defparameter *python-ldflags*
         (return-value-as-list "python3-config --embed --ldflags"))))
 
 
