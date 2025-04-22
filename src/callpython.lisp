@@ -172,7 +172,7 @@ It takes in a foreign-pointer to a python callable and returns a foreign pointer
 		      #-lispworks
                       (cffi:with-pointer-to-vector-data
                           (ptr (array-storage (car rem-args)))
-                        #-ccl (declare (ignore ptr))
+                        #-(or ccl clisp) (declare (ignore ptr))
                         (apply #'pin-and-call (rest rem-args))))
                      (t
                       (apply #'pin-and-call (rest rem-args))))))
