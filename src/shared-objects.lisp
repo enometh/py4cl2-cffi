@@ -44,7 +44,9 @@
      #+mk-defsystem
      (make-pathname
       :name nil :type nil :version nil :defaults
-      (merge-pathnames "src/" (probe-file (mk::system-relative-pathname :py4cl2-cffi ""))))))
+      (merge-pathnames "src/" (#-clisp probe-file
+				       #+clisp ext:probe-directory
+				       (mk::system-relative-pathname :py4cl2-cffi ""))))))
 
   (defvar *numpy-utils-shared-object-path*
     (merge-pathnames
