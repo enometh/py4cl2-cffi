@@ -44,9 +44,11 @@
      #+mk-defsystem
      (make-pathname
       :name nil :type nil :version nil :defaults
-      (merge-pathnames "src/" (#-clisp probe-file
-				       #+clisp ext:probe-directory
-				       (mk::system-relative-pathname :py4cl2-cffi ""))))))
+      (merge-pathnames
+       (format nil "src/~A/" +python-version-string+)
+       (#-clisp probe-file
+		#+clisp ext:probe-directory
+		(mk::system-relative-pathname :py4cl2-cffi ""))))))
 
   (defparameter *numpy-utils-shared-object-path*
     (merge-pathnames
@@ -57,22 +59,28 @@
      #+mk-defsystem
      (make-pathname
       :name nil :type nil :version nil :defaults
-      (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi "")))))
+      (merge-pathnames
+       (format nil "src/~A/" +python-version-string+)
+       (mk::system-relative-pathname :py4cl2-cffi "")))))
 
   (defvar *numpy-installed-p*)
 
   (defun compile-base-utils-shared-object (&key force)
+    (ensure-directories-exist *utils-shared-object-path* :verbose t)
     (uiop:with-current-directory
         (
 	 #+(and asdf (not mk-defsystem))
 	   (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
 	   #+mk-defsystem
-	   (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi ""))
+	   (merge-pathnames
+	    (format nil "src/~A/" +python-version-string+)
+	    (mk::system-relative-pathname :py4cl2-cffi ""))
 	   )
       (let* ((program-string
                (format nil
                        ;; *python-compile-command*
-		       "gcc ~A -c -Wall -Werror -fpic py4cl-utils.c"
+		       (format nil "gcc ~A -c -Wall -Werror -fpic ~~A"
+			       (namestring *utils-source-file-path*))
                        (format nil "~{~a~^ ~}" *python-includes*))))
 	#||
         (format t "~&~A~%" program-string)
@@ -80,18 +88,23 @@
                           :error-output *error-output*
                           :output *standard-output*)
 	||#
-	(compile-if-newer "py4cl-utils.c" "py4cl-utils.o" program-string
+	(compile-if-newer (namestring *utils-source-file-path*)
+			  "py4cl-utils.o"
+			  program-string
 			  :force force)
 	(compile-if-newer "py4cl-utils.o" "libpy4cl-utils.so"
                             "gcc -shared -o libpy4cl-utils.so py4cl-utils.o"
 			    :force force))))
 
   (defun may-be-compile-numpy-utils-shared-object (&key force)
+    (ensure-directories-exist *numpy-utils-shared-object-path* :verbose t)
     (uiop:with-current-directory
 	( #+(and asdf (not mk-defsystem))
 	  (asdf:component-pathname (asdf:find-system "py4cl2-cffi"))
 	   #+mk-defsystem
-	   (merge-pathnames "src/" (mk::system-relative-pathname :py4cl2-cffi ""))
+	   (merge-pathnames
+	    (format nil "src/~A/" +python-version-string+)
+	    (mk::system-relative-pathname :py4cl2-cffi ""))
 	   )
       (multiple-value-bind (numpy-path error-output error-status)
 	  (uiop:run-program
@@ -121,16 +134,17 @@
                                  (string-trim (list #\newline) numpy-path)))))
           (when numpy-installed-p
 	    (compile-if-newer
-	     "py4cl-numpy-utils.c"
+	     #1=(merge-pathnames "py4cl-numpy-utils.c" *utils-source-file-path*)
 	     "py4cl-numpy-utils.o"
-	     (format nil "gcc ~A -I'~A' -c -Wall -Werror -fpic py4cl-numpy-utils.c -Wno-error -Wno-return-type -Wno-int-conversion -Wno-implicit-function-declaration"
+	     (format nil "gcc ~A -I'~A' -c -Wall -Werror -fpic ~A -Wno-error -Wno-return-type -Wno-int-conversion -Wno-implicit-function-declaration"
 		     (format nil "~{~a~^ ~}" *python-includes*)
 		     (format nil (ecase numpy-version
                                    (1 "~A/core/include/")
                                    (2 "~A/_core/include/"))
 			     (string-trim (list #\newline)
 					  ;; numpy-path = "/usr/lib/python3.11/site-packages/numpy"
-					  numpy-path)))
+					  numpy-path))
+		     (namestring #1#))
 	     :force force)
 	    (compile-if-newer
 	     "py4cl-numpy-utils.o"
@@ -146,10 +160,12 @@
 	  #+(and asdf (not mk-defsystem))
            (asdf:component-pathname
             (asdf:find-component
-             "py4cl2-cffi" "numpy-installed-p.txt"))
+             "py4cl2-cffi" "numpy-installed-p.txt"));FIXME ;madhu 250917
 	   #+mk-defsystem
 	   (mk::system-relative-pathname
-	    :py4cl2-cffi "src/numpy-installed-p.txt")))
+	    :py4cl2-cffi
+	    (format nil "src/~A/numpy-installed-p.txt"
+		    +python-version-string+))))
     (multiple-value-bind (numpy-installed-p-old error)
           (ignore-errors
            (with-standard-io-syntax

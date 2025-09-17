@@ -63,7 +63,7 @@
 		 (:file "lisp-utils")
 		 (:file "py4cl-utils.c" :language :static-file)
 		 (:file "py4cl-numpy-utils.c" :language :static-file)
-		 (:file "numpy-installed-p.txt" :language :static-file)
+;;		 (:file "numpy-installed-p.txt" :language :static-file)
 		 (:file "shared-objects")
 		 (:file "dedicated-thread-utils")
 		 (:file "gil-gc")
