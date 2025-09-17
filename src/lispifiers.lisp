@@ -126,7 +126,24 @@
                                             :pointer (inc-pointer from-vec
                                                                   (cl:* idx 8))
                                             :pointer))))
-        (with-pointer-to-vector-data (to-vec (array-storage array))
+	#+lispworks
+	(let* ((element-type (array-element-type array))
+	       (uaet (upgraded-array-element-type element-type))
+	       (pinnable-p (if (member uaet '(character t))
+			       nil t))
+	       (vector (make-array (length array)
+				   :element-type element-type
+				   :initial-contents array
+				   :allocation (if pinnable-p
+						   :pinnable
+						   :static-new))))
+;;	  (d "%NDARRAY*" pinnable-p)
+	  (hcl:with-pinned-objects (vector)
+	    (fli:with-dynamic-lisp-array-pointer (to-vec vector)
+	      (pyforeign-funcall "memcpy" :pointer to-vec :pointer from-vec
+                                      :int num-bytes))))
+	#-lispworks
+	(with-pointer-to-vector-data (to-vec (array-storage array))
           (pyforeign-funcall "memcpy" :pointer to-vec :pointer from-vec
                                       :int num-bytes)))
     array))
