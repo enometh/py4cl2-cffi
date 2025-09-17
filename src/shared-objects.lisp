@@ -25,7 +25,7 @@
     (uiop:run-program command
 		      :error-output *error-output*
 		      :output *standard-output*)))
-  (defvar *utils-source-file-path*
+  (defparameter *utils-source-file-path*
     (merge-pathnames
      #p"py4cl-utils.c"
      #+(and asdf (not mk-defsystem))
@@ -35,7 +35,7 @@
      #+(and nil mk-defsystem (not asdf))
      (mk::component-root-dir (mk:find-system "py4cl2-cffi" :load-or-nil) :source)))
 
-  (defvar *utils-shared-object-path*
+  (defparameter *utils-shared-object-path*
     (merge-pathnames
      (pathname (%shared-library-from-ldflag "-lpy4cl-utils"))
      #+(and asdf (not mk-defsystem))
@@ -48,7 +48,7 @@
 				       #+clisp ext:probe-directory
 				       (mk::system-relative-pathname :py4cl2-cffi ""))))))
 
-  (defvar *numpy-utils-shared-object-path*
+  (defparameter *numpy-utils-shared-object-path*
     (merge-pathnames
      (pathname (%shared-library-from-ldflag "-lpy4cl-numpy-utils"))
      #+(and asdf (not mk-defsystem))
